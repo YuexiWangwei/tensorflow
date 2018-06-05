@@ -61,7 +61,9 @@ with myGraph.as_default():
         tf.summary.histogram('b_fc1', b_fc1)
 
     with tf.name_scope('train'):
+        loss1 = tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y)
         cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y))
+        loss = tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y)
         train_step = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(cross_entropy)
         correct_prediction = tf.equal(tf.argmax(y_conv,1), tf.argmax(y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -78,11 +80,20 @@ with tf.Session(graph=myGraph) as sess:
 
     starttime = datetime.datetime.now()
     for i in range(1):
-        batch = mnist.train.next_batch(2)
+        batch = mnist.train.next_batch(16)
         # print(batch[1])
         # print(batch)
-        sess.run(train_step,feed_dict={x_raw:batch[0], y:batch[1], keep_prob:0.5})
 
+        sess.run(train_step,feed_dict={x_raw:batch[0], y:batch[1], keep_prob:0.5})
+        # print(batch[0].shape, batch[1].shape)
+        # print(x.shape)
+        # print(l_pool1.shape)
+        # print(l_pool2.shape)
+        # print(l_fc1_drop.shape)
+        # print(y_conv.eval(feed_dict={x_raw:batch[0], y:batch[1], keep_prob:1.0}))
+        # print(y_conv.shape)
+        # print(loss1.eval(feed_dict={x_raw:batch[0], y:batch[1], keep_prob:1.0}))
+        # print(cross_entropy.eval(feed_dict={x_raw:batch[0], y:batch[1], keep_prob:1.0}))
         if i%100 == 0:
             train_accuracy = accuracy.eval(feed_dict={x_raw:batch[0], y:batch[1], keep_prob:1.0})
             print('step %d training accuracy:%g'%(i, train_accuracy))
