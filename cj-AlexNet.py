@@ -15,6 +15,8 @@ def read_and_decode(filename):
 
     img = tf.decode_raw(features['img_raw'], tf.uint8)
     img = tf.reshape(img, [224, 224, 3])  # reshape为224*224的3通道图片
+    img = tf.cast(img, tf.float32) * (1. / 255)  # 在流中抛出img张量
+    # img = tf.cast(img, tf.float32) * (1. / 255) - 0.5  # 在流中抛出img张量
     label = tf.decode_raw(features['label'], tf.int32)  # 此种方法适用于标签是类似于[0,0,0,1,0,0,0]
     label = tf.reshape(label, [5])
 
@@ -97,9 +99,12 @@ with myGraph.as_default():
         tf.summary.histogram("b_fc2",b_fc2)
 
     with myGraph.name_scope("train"):
-        # loss = -tf.reduce_sum(y * tf.log(y_conv))
+        # loss = -tf.reduce_sum(y*tf.log(tf.clip_by_value(y_conv,1e-10,1.0)))
+        # loss1 = tf.nn.softmax_cross_entropy_with_logits(logits=y_conv, labels=y)
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y_conv,labels=y))
-        train_step = tf.train.MomentumOptimizer(learning_rate=0.00001,momentum=0.9).minimize(loss)
+        # loss = tf.nn.softmax_cross_entropy_with_logits(logits=y_conv,labels=y)
+        # train_step = tf.train.MomentumOptimizer(learning_rate=0.001,momentum=0.9).minimize(loss)
+        train_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(loss)
         prediction = tf.equal(tf.argmax(y_conv,1),tf.argmax(y,1))
         # prediction = tf.equal(y_conv,y)
         accuracy = tf.reduce_mean(tf.cast(prediction,tf.float32))
@@ -114,13 +119,14 @@ with myGraph.as_default():
     #     return image_batch, label_batch
 
     image_train, label_train = read_and_decode("canjian-train-array.tfrecords")
-    # image_test, label_test = read_and_decode("canjian-test.tfrecords")
+    image_test, label_test = read_and_decode("canjian-test-array.tfrecords")
     # image_batch, label_batch = tf.train.shuffle_batch([image_train, label_train], batch_size=16, capacity=100, min_after_dequeue=50)
-    image_batch, label_batch = tf.train.batch([image_train, label_train], batch_size=16)
+    image_train_batch, label_train_batch = tf.train.batch([image_train, label_train], batch_size=32)
+    image_test_batch, label_test_batch = tf.train.batch([image_test, label_test], batch_size=1)
 
 with tf.Session(graph=myGraph) as sess:
     sess.run(tf.global_variables_initializer())
-    saver = tf.train.Saver()
+    # saver = tf.train.Saver()
 
     merged = tf.summary.merge_all()
     summary_writer = tf.summary.FileWriter('./cjEvent', graph=sess.graph)
@@ -129,27 +135,78 @@ with tf.Session(graph=myGraph) as sess:
     threads = tf.train.start_queue_runners(coord=coord)
 
     print("start!")
-    for epochs in range(2):
+    for epochs in range(40):
+
+        print("%s   epoch"%(epochs+1))
         each_epoch_time = datetime.datetime.now()
-        for iteration in range(20):#13372/16==835  13372/256 == 52
-            batch = sess.run([image_batch, label_batch])
+
+        #一个周期的迭代总数
+        for iteration in range(214):#13372/16==835  13372/256 == 52
+            train_batch = sess.run([image_train_batch, label_train_batch])
+            sess.run(train_step, feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 0.5})
+
             # print(batch[0].shape,batch[1].shape)
-            sess.run(train_step, feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 0.5})
+            # print(x_raw.shape)
+            # print(out_pool1.shape)
+            # print(out_pool2.shape)
+            # print(out_pool3.shape)
+            # print(out_pool4_flat.shape)
+            # print(out_fc1_drop.shape)
+            # print(y_conv.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
+            # print(y_conv.shape)
+            # print(loss1.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
+            # print(loss.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
 
-            summary = sess.run(merged, feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0})
-            summary_writer.add_summary(summary, (epochs+1)*52+iteration+1)
+        end_time = datetime.datetime.now()
 
-            train_accuracy = accuracy.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0})
-            print('step %d training accuracy:%g' % ((epochs)*52+iteration+1, train_accuracy))
+        #用训练数据来测试正确率
+        test_accuracy = accuracy.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
+        test_loss = loss.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
+        print("ecah epoch time: %s" % (end_time - each_epoch_time))
+        print('the accuracy is: %g' % test_accuracy)
+        print('the    loss  is: %g' % test_loss)
 
+        print("")
+
+        #跟踪参数变化
+        summary = sess.run(merged, feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
+        summary_writer.add_summary(summary,(epochs+1))
+
+
+        # #训练完一个周期以后，用1000张test照片进行验证
+        # result1 = 0
+        # result2 = 0
+        # for i in range(2):
+        #     test_batch = sess.run([image_test_batch, label_test_batch])
+        #     test_accuracy = accuracy.eval(feed_dict={x_raw: test_batch[0], y: test_batch[1], keep_prob: 1.0})
+        #     loss_value = loss.eval(feed_dict={x_raw: test_batch[0], y: test_batch[1], keep_prob: 1.0})
+        #     print(loss_value)
+        #     # print()
+        #     result1= result1 + test_accuracy
+        #     result2 = result2 +loss_value
+        #
+        # result1 = result1 / 2
+        # result2 = result2 / 2
+        #
+        # print("ecah epoch time: %s"%(end_time-each_epoch_time))
+        # print("the accuracy is: %s" % result1)
+        # print("the   loss   is: %s" % result2)
+        # print("")
+
+
+    # now = datetime.datetime.now()
+    # summary = sess.run(merged, feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0})
+    # summary_writer.add_summary(summary, (epochs + 1) * 52 + iteration + 1)
+    #
+    # end = datetime.datetime.now()
+    # print(end - now)
         # summary = sess.run(merged, feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0})
         # summary_writer.add_summary(summary, i)
 
-        train_end_time = datetime.datetime.now()
-        print("this epoch training time:%s"%(train_end_time-each_epoch_time))
+        # train_end_time = datetime.datetime.now()
+        # print("this epoch training time:%s"%(train_end_time-each_epoch_time))
 
-    print("")
-    print("")
+
 
     #test!
     # image_test, label_test = read_and_decode("canjian-test-array.tfrecords")
@@ -158,10 +215,11 @@ with tf.Session(graph=myGraph) as sess:
     # test_accuracy = accuracy.eval(feed_dict={x_raw:test_image_batch , y:test_label_batch , keep_prob: 1.0})
     # print('test accuracy:%g' % test_accuracy)
 
-    saver.save(sess,save_path='./cjmodel/',global_step=1)
-
-    end_time = datetime.datetime.now()
-    print("total time:%s"%(end_time-each_epoch_time))
+    #保存模型，关闭线程
+    # saver.save(sess,save_path='./cjmodel/',global_step=1)
+    #
+    # end_time = datetime.datetime.now()
+    # print("total time:%s"%(end_time-each_epoch_time))
 
     coord.request_stop()
     coord.join(threads)
