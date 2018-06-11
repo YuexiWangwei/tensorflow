@@ -152,7 +152,7 @@ with tf.Session(graph=myGraph) as sess:
             # print(out_pool3.shape)
             # print(out_pool4_flat.shape)
             # print(out_fc1_drop.shape)
-            # print(y_conv.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
+            # print(y_conv.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0}))
             # print(y_conv.shape)
             # print(loss1.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
             # print(loss.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
