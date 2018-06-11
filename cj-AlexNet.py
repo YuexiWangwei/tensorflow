@@ -173,48 +173,6 @@ with tf.Session(graph=myGraph) as sess:
         summary_writer.add_summary(summary,(epochs+1))
 
 
-        # #训练完一个周期以后，用1000张test照片进行验证
-        # result1 = 0
-        # result2 = 0
-        # for i in range(2):
-        #     test_batch = sess.run([image_test_batch, label_test_batch])
-        #     test_accuracy = accuracy.eval(feed_dict={x_raw: test_batch[0], y: test_batch[1], keep_prob: 1.0})
-        #     loss_value = loss.eval(feed_dict={x_raw: test_batch[0], y: test_batch[1], keep_prob: 1.0})
-        #     print(loss_value)
-        #     # print()
-        #     result1= result1 + test_accuracy
-        #     result2 = result2 +loss_value
-        #
-        # result1 = result1 / 2
-        # result2 = result2 / 2
-        #
-        # print("ecah epoch time: %s"%(end_time-each_epoch_time))
-        # print("the accuracy is: %s" % result1)
-        # print("the   loss   is: %s" % result2)
-        # print("")
-
-
-    # now = datetime.datetime.now()
-    # summary = sess.run(merged, feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0})
-    # summary_writer.add_summary(summary, (epochs + 1) * 52 + iteration + 1)
-    #
-    # end = datetime.datetime.now()
-    # print(end - now)
-        # summary = sess.run(merged, feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0})
-        # summary_writer.add_summary(summary, i)
-
-        # train_end_time = datetime.datetime.now()
-        # print("this epoch training time:%s"%(train_end_time-each_epoch_time))
-
-
-
-    #test!
-    # image_test, label_test = read_and_decode("canjian-test-array.tfrecords")
-    # test_image_batch, test_label_batch = tf.train.batch([image_test, label_test], batch_size=2500)
-    # test_batch = sess.run([test_image_batch, test_label_batch])
-    # test_accuracy = accuracy.eval(feed_dict={x_raw:test_image_batch , y:test_label_batch , keep_prob: 1.0})
-    # print('test accuracy:%g' % test_accuracy)
-
     #保存模型，关闭线程
     # saver.save(sess,save_path='./cjmodel/',global_step=1)
     #
