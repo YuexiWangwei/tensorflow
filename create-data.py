@@ -30,9 +30,12 @@ label_raw = np.array([[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1
 # nweimg = im.resize((227, 227), Image.ANTIALIAS).filter(ImageFilter.SHARPEN)
 # nweimg.save("nweimg.png")
 
-cwd = "C:/Users/ww/Desktop/python tf/data-canjian-picture/"
+# cwd = "C:/Users/ww/Desktop/python tf/data-canjian-picture/"
+cwd = "E:/Python/tensorflow/data-canjian-picture/"
 classes = ["bie","hege","huang", "jixing","sgong"]
-writer = tf.python_io.TFRecordWriter("canjian-train-array.tfrecords")  # 要生成的文件
+training = tf.python_io.TFRecordWriter("canjian-train-array.tfrecords")  # 要生成的文件
+validation = tf.python_io.TFRecordWriter("canjian-validation-array.tfrecords")
+test = tf.python_io.TFRecordWriter("canjian-test-array.tfrecords")
 
 # classes = ["bie","hege","huang", "jixing","sgong"]
 # cwd = "C:/Users/ww/Desktop/python tf/data-canjian-test/"
@@ -59,19 +62,54 @@ for i in range(5):
 lenth = len(list_img)
 
 for each in range(lenth):
-    img = Image.open(list_img[each][0])
-    img = img.resize((224, 224))
-    img_raw = img.tobytes()  # 将图片转化为二进制格式
-    label = list_img[each][1]
-    # label = np.array(label)
-    print(label)
-    label = label.tobytes()
-    example = tf.train.Example(features=tf.train.Features(feature={
-        # 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),
-        'label': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label])),
-        'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
-    }))  # example对象对label和image数据进行封装
-    writer.write(example.SerializeToString())  # 序列化为字符串
-    # print(label)
+    if each < 10772:
+        img = Image.open(list_img[each][0])
+        img = img.resize((224, 224))
+        img_raw = img.tobytes()  # 将图片转化为二进制格式
+        label = list_img[each][1]
+        # label = np.array(label)
+        print(label)
+        label = label.tobytes()
+        example = tf.train.Example(features=tf.train.Features(feature={
+            # 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),
+            'label': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label])),
+            'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
+        }))  # example对象对label和image数据进行封装
+        training.write(example.SerializeToString())  # 序列化为字符串
+        # print(label)
 
-writer.close()
+    elif each >=10772 and each <12072:
+        img = Image.open(list_img[each][0])
+        img = img.resize((224, 224))
+        img_raw = img.tobytes()  # 将图片转化为二进制格式
+        label = list_img[each][1]
+        # label = np.array(label)
+        print(label)
+        label = label.tobytes()
+        example = tf.train.Example(features=tf.train.Features(feature={
+            # 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),
+            'label': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label])),
+            'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
+        }))  # example对象对label和image数据进行封装
+        validation.write(example.SerializeToString())  # 序列化为字符串
+        # print(label)
+
+    else:
+        img = Image.open(list_img[each][0])
+        img = img.resize((224, 224))
+        img_raw = img.tobytes()  # 将图片转化为二进制格式
+        label = list_img[each][1]
+        # label = np.array(label)
+        print(label)
+        label = label.tobytes()
+        example = tf.train.Example(features=tf.train.Features(feature={
+            # 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[label])),
+            'label': tf.train.Feature(bytes_list=tf.train.BytesList(value=[label])),
+            'img_raw': tf.train.Feature(bytes_list=tf.train.BytesList(value=[img_raw]))
+        }))  # example对象对label和image数据进行封装
+        test.write(example.SerializeToString())  # 序列化为字符串
+        # print(label)
+
+training.close()
+validation.close()
+test.close()
