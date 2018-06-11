@@ -119,10 +119,13 @@ with myGraph.as_default():
     #     return image_batch, label_batch
 
     image_train, label_train = read_and_decode("canjian-train-array.tfrecords")
-    image_test, label_test = read_and_decode("canjian-test-array.tfrecords")
+    image_validation, label_validation = read_and_decode("canjian-validation-array.tfrecords")
+    # image_test, label_test = read_and_decode("canjian-test-array.tfrecords")
     # image_batch, label_batch = tf.train.shuffle_batch([image_train, label_train], batch_size=16, capacity=100, min_after_dequeue=50)
     image_train_batch, label_train_batch = tf.train.batch([image_train, label_train], batch_size=32)
-    image_test_batch, label_test_batch = tf.train.batch([image_test, label_test], batch_size=1)
+    image_validation_batch, label_validation_batch = tf.train.batch([image_validation, label_validation], batch_size=32)
+    # image_test_batch, label_test_batch = tf.train.batch([image_test, label_test], batch_size=1)
+
 
 with tf.Session(graph=myGraph) as sess:
     sess.run(tf.global_variables_initializer())
@@ -135,13 +138,13 @@ with tf.Session(graph=myGraph) as sess:
     threads = tf.train.start_queue_runners(coord=coord)
 
     print("start!")
-    for epochs in range(40):
+    for epochs in range(10):
 
         print("%s   epoch"%(epochs+1))
-        each_epoch_time = datetime.datetime.now()
+        start_time = datetime.datetime.now()
 
         #一个周期的迭代总数
-        for iteration in range(214):#13372/16==835  13372/256 == 52
+        for iteration in range(20):#13372/16==835  13372/256 == 52
             train_batch = sess.run([image_train_batch, label_train_batch])
             sess.run(train_step, feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 0.5})
 
@@ -157,20 +160,44 @@ with tf.Session(graph=myGraph) as sess:
             # print(loss1.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
             # print(loss.eval(feed_dict={x_raw: batch[0], y: batch[1], keep_prob: 1.0}))
 
-        end_time = datetime.datetime.now()
+        iteration_time = datetime.datetime.now()
 
-        #用训练数据来测试正确率
-        test_accuracy = accuracy.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
+        # # 用训练数据来测试正确率
+        # test_accuracy = accuracy.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
+        # test_loss = loss.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
+        # print("ecah epoch time: %s" % (end_time - each_epoch_time))
+        # print('the accuracy is: %g' % test_accuracy)
+        # print('the    loss  is: %g' % test_loss)
+        #
+        # print("")
+
+        #用验证数据来验证正确率
+        temp_accuracy = 0
+        for i in range(40):
+            validation_batch = sess.run([image_validation_batch, label_validation_batch])
+            test_accuracy = accuracy.eval(feed_dict={x_raw: validation_batch[0], y: validation_batch[1], keep_prob: 1.0})
+            print(test_accuracy)
+            temp_accuracy = test_accuracy + temp_accuracy
+
+        temp_accuracy = temp_accuracy/40
         test_loss = loss.eval(feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
-        print("ecah epoch time: %s" % (end_time - each_epoch_time))
-        print('the accuracy is: %g' % test_accuracy)
-        print('the    loss  is: %g' % test_loss)
 
-        print("")
+        test_time = datetime.datetime.now()
 
         #跟踪参数变化
         summary = sess.run(merged, feed_dict={x_raw: train_batch[0], y: train_batch[1], keep_prob: 1.0})
         summary_writer.add_summary(summary,(epochs+1))
+
+        summary_time = datetime.datetime.now()
+
+        print('the accuracy is: %g' % temp_accuracy)
+        print('the    loss  is: %g' % test_loss)
+        print("")
+        print("iteration time: %s"%(iteration_time-start_time))
+        print("test      time: %s"%(test_time - iteration_time))
+        print("summary   time: %s"%(summary_time - test_time))
+        print("one epoch time: %s"%(summary_time - start_time))
+        print("-----------------------------------")
 
 
     #保存模型，关闭线程
