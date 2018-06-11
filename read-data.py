@@ -20,6 +20,7 @@ def read_and_decode(filename):  # 读入dog_train.tfrecords
 
     img = tf.decode_raw(features['img_raw'], tf.uint8)
     img = tf.reshape(img, [224, 224, 3])  # reshape为224*224的3通道图片
+    img = tf.cast(img, tf.float32) * (1. / 255)  # 在流中抛出img张量
     label = tf.decode_raw(features['label'], tf.int32)  #此种方法适用于标签是类似于[0,0,0,1,0,0,0]
     label = tf.reshape(label, [5])
 
