@@ -1,5 +1,8 @@
 # -*- coding: UTF-8 -*-
 # -*- coding: UTF-8 -*-
+
+#       此程序用来一次预测多个各类的蚕茧并得出正确率
+
 import tensorflow as tf
 import datetime
 
